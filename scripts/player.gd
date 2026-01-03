@@ -30,10 +30,18 @@ func move_x(delta):
 		velocity.x = move_toward(velocity.x, 0, (deceleration * delta))
 
 #=== Movimento no eixo y
+const jump_speed = -300.0
+
 # Função para aplicar a gravidade sobre o Player
 func apply_gravity(delta):
 	if not is_on_floor():
 		velocity += (get_gravity() * delta)
+		
+
+# Função para pular
+func jump(_delta):
+	if Input.is_action_just_pressed("UP"):
+		velocity.y = jump_speed
 
 #======================================================
 
@@ -41,4 +49,5 @@ func apply_gravity(delta):
 func _physics_process(delta: float) -> void:
 	apply_gravity(delta)
 	move_x(delta)
+	jump(delta)
 	move_and_slide()
