@@ -5,10 +5,10 @@ extends CharacterBody2D
 
 #========== Componente de movimento do Player ==========
 #=== Movimento no eixo x
-var direction             = 0
-@export var maximum_speed = 100.0
-@export var acceleration  = 400.0
-@export var deceleration  = 400.0
+var direction               = 0
+@export var maximum_speed_x = 100.0
+@export var acceleration    = 400.0
+@export var deceleration    = 400.0
 
 # Função para virar a animação do Player para esquerda ou para direita
 func update_direction():
@@ -22,11 +22,9 @@ func update_direction():
 func move_x(delta):
 	# Atualizar sentido da direção do movimento do Player no eixo x
 	update_direction()
-	if direction: 
-		# Se sim, acelerar para andar
-		velocity.x = move_toward(velocity.x, (direction * maximum_speed), (acceleration * delta))
-	else:
-		# Se não, desacelerar e parar
+	if direction: # Se sim, acelerar para andar
+		velocity.x = move_toward(velocity.x, (direction * maximum_speed_x), (acceleration * delta))
+	else: # Se não, desacelerar e parar
 		velocity.x = move_toward(velocity.x, 0, (deceleration * delta))
 
 #=== Movimento no eixo y
@@ -36,7 +34,6 @@ const jump_speed = -300.0
 func apply_gravity(delta):
 	if not is_on_floor():
 		velocity += (get_gravity() * delta)
-		
 
 #======================================================
 #========== Máquina de estados do personagem ==========
@@ -44,9 +41,11 @@ func apply_gravity(delta):
 enum PlayerState {
 	IDLE = 0, # Parado sem receber comandos de entrada
 	WALKING,  # Movendo-se no eixo X
-	JUMPING,  # Movendo-se no eixo y
+	RISING,   # Movendo-se no eixo y, para cima
+	FALLING   # Movendo-se no eixo y, para baixo
 }
 var status: PlayerState # Variável para guardar o estado atual do Player
+
 #=== Funções de entrada no estado
 # Função para entrar no estado IDLE
 func go_to_idle_state():
@@ -58,48 +57,73 @@ func go_to_walking_state():
 	status = PlayerState.WALKING
 	animation.play("WALKING")
 
-# Função para entrar no estado JUMPING
-func go_to_jumping_state():
-	status = PlayerState.JUMPING
-	animation.play("JUMPING")
+# Função para entrar no estado RISING
+func go_to_rising_state():
+	status = PlayerState.RISING
+	animation.play("RISING")
 	velocity.y = jump_speed
+
+# Função para entrar no estado FALLING
+func go_to_falling_state():
+	status = PlayerState.FALLING
+	animation.play("FALLING")
 
 #=== Funções de processamento do estado atual
 # Função para processar o estado IDLE
 func idle_state(delta):
-	# Enquanto estiver no estado:
+	# Enquanto estiver no estado IDLE:
 	apply_gravity(delta) # Aplicar a gravidade
 	move_x(delta)        # Manter o personagem parado
-	# Mudar estado
-	if Input.is_action_just_pressed("UP"):
-		go_to_jumping_state()
-		return
-	if (velocity.x != 0):
+	# Processar o próximo estado
+	# De parado para andando
+	if (velocity.x != 0): # Pressionou alguma tecla de movimento horizontal
 		go_to_walking_state()
+		return
+	# De parado para "pulando"
+	if Input.is_action_just_pressed("UP"): # Pressionou alguma tecla de pulo
+		go_to_rising_state()
 		return
 
 func walking_state(delta):
-	apply_gravity(delta)
-	move_x(delta)
-	# Mudar estado
-	if velocity.x == 0:
+	# Enquanto estiver no estado WALKING:
+	apply_gravity(delta) # Aplicar a gravidade
+	move_x(delta)        # Manter o personagem andando no eixo x
+	# Processar o próximo estado
+	# De andando para parado
+	if velocity.x == 0: # Parou de pressionar alguma tecla de movimento horizontal
 		go_to_idle_state()
 		return
-	if Input.is_action_just_pressed("UP"):
-		go_to_jumping_state()
+	# De andando para "pulando"
+	if Input.is_action_just_pressed("UP"): # Pressionou a tecla de pulo
+		go_to_rising_state()
+		return
+	# De andando para caindo
+	if not is_on_floor(): # Caiu de uma estrutura
+		go_to_falling_state()
 		return
 
-func jumping_state(delta):
-	apply_gravity(delta)
-	move_x(delta)
-	# Mudar estado
+func rising_state(delta):
+	# Enquanto estiver no estado RISING:
+	apply_gravity(delta) # Aplicar a gravidade
+	move_x(delta)        # Permitir mover na horizontal enquanto pula
+	# Processar o próximo estado
+	# De "pulando" para caindo
+	if (velocity.y > 0): # O vetor velocidade no eixo y fica positivo na descida
+		go_to_falling_state()
+		return
+	
+
+func falling_state(delta):
+	# Enquanto estiver no estado FALLING:
+	apply_gravity(delta) # Aplicar a gravidade
+	move_x(delta)        # Permitir mover na horizontal enquanto cai
+	# Processar o próximo estado
+	# De caindo para parado ou andando
 	if is_on_floor():
-		# Cair parado
-		if velocity.x == 0:
-			go_to_idle_state()
-		# Cair correndo
-		else:
+		if velocity.x != 0: # cair andando
 			go_to_walking_state()
+		else:
+			go_to_idle_state() # cair parado
 		return
 
 #======================================================
@@ -116,6 +140,8 @@ func _physics_process(delta: float) -> void:
 			idle_state(delta)
 		PlayerState.WALKING:
 			walking_state(delta)
-		PlayerState.JUMPING:
-			jumping_state(delta)
+		PlayerState.RISING:
+			rising_state(delta)
+		PlayerState.FALLING:
+			falling_state(delta)
 	move_and_slide()
