@@ -5,18 +5,18 @@ extends CharacterBody2D
 
 #========== Componente de movimento do Player ==========
 #=== Movimento no eixo x
-var direction               = 0
-@export var maximum_speed_x = 100.0
-@export var acceleration    = 400.0
-@export var deceleration    = 400.0
+var direction               = 0     # Sentido da direção no eixo x
+@export var maximum_speed_x = 300.0 # Valor máximo do módulo velocidade no eixo x
+@export var acceleration    = 500.0 # Módulo do vetor aceleração
+@export var deceleration    = 300.0 # Módulo do velor "desaceleração"
 
 # Função para virar a animação do Player para esquerda ou para direita
 func update_direction():
 	direction = Input.get_axis("LEFT", "RIGHT")
-	if direction < 0:
-		animation.flip_h = true
-	elif direction > 0:
+	if direction > 0:
 		animation.flip_h = false
+	elif direction < 0:
+		animation.flip_h = true
 
 # Função para atualizar a velocidade no eixo x
 func move_x(delta):
@@ -28,7 +28,9 @@ func move_x(delta):
 		velocity.x = move_toward(velocity.x, 0, (deceleration * delta))
 
 #=== Movimento no eixo y
-const jump_speed = -300.0
+@export var jump_speed      = -300.0 # Velocidade inicial do pulo
+@export var max_jump_number = 2      # Número máximo de pulos
+var jump_count              = 0      # Contador de pulos realizados
 
 # Função para aplicar a gravidade sobre o Player
 func apply_gravity(delta):
@@ -61,7 +63,10 @@ func go_to_walking_state():
 func go_to_rising_state():
 	status = PlayerState.RISING
 	animation.play("RISING")
+	# Pular antes de entrar no estado para sicronizar a animação
 	velocity.y = jump_speed
+	# Contar os pulos
+	jump_count += 1
 
 # Função para entrar no estado FALLING
 func go_to_falling_state():
@@ -111,7 +116,10 @@ func rising_state(delta):
 	if (velocity.y > 0): # O vetor velocidade no eixo y fica positivo na descida
 		go_to_falling_state()
 		return
-	
+	# De "pulando" para "pulando" - segundo pulo
+	if Input.is_action_just_pressed("UP") && (jump_count < max_jump_number):
+		go_to_rising_state()
+		return;
 
 func falling_state(delta):
 	# Enquanto estiver no estado FALLING:
@@ -120,11 +128,17 @@ func falling_state(delta):
 	# Processar o próximo estado
 	# De caindo para parado ou andando
 	if is_on_floor():
+		jump_count = 0 # Resetar contador de pulo no solo
 		if velocity.x != 0: # cair andando
 			go_to_walking_state()
 		else:
 			go_to_idle_state() # cair parado
 		return
+	# De caindo para "pulando"
+	else: # Lógica do segundo pulo durante a queda
+		if Input.is_action_just_pressed("UP") && (jump_count < max_jump_number):
+			go_to_rising_state()
+			return
 
 #======================================================
 
