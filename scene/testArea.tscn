@@ -1,0 +1,48 @@
+[gd_scene load_steps=4 format=3 uid="uid://ct2jc88nnhasw"]
+
+[ext_resource type="PackedScene" uid="uid://wil3dyjk6wmu" path="res://entities/player.tscn" id="1_bmxgx"]
+[ext_resource type="PackedScene" uid="uid://chbunrvrulxx3" path="res://entities/camera.tscn" id="9_34ia6"]
+
+[sub_resource type="SegmentShape2D" id="SegmentShape2D_bmxgx"]
+a = Vector2(568, 721)
+b = Vector2(-720, 721)
+
+[node name="testArea" type="Node2D"]
+metadata/_edit_vertical_guides_ = [294.0, -866.0, 600.0]
+metadata/_edit_horizontal_guides_ = [-162.0, 530.0, 280.0, -145.0]
+
+[node name="Player" type="Node" parent="."]
+
+[node name="player" parent="Player" instance=ExtResource("1_bmxgx")]
+position = Vector2(29, 689)
+collision_layer = 2
+collision_mask = 9
+jump_speed = -533.1
+
+[node name="Camera" parent="." instance=ExtResource("9_34ia6")]
+limit_left = 0
+limit_top = 0
+limit_right = 1280
+limit_bottom = 720
+
+[node name="StaticBody2D" type="StaticBody2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D"]
+position = Vector2(720, 0)
+shape = SubResource("SegmentShape2D_bmxgx")
+debug_color = Color(3.513545e-06, 0.6328569, 0.45039046, 0.41960785)
+
+[node name="CollisionShape2D2" type="CollisionShape2D" parent="StaticBody2D"]
+position = Vector2(884, -186)
+shape = SubResource("SegmentShape2D_bmxgx")
+debug_color = Color(3.513545e-06, 0.6328569, 0.45039046, 0.41960785)
+
+[node name="CollisionShape2D3" type="CollisionShape2D" parent="StaticBody2D"]
+position = Vector2(1020, -334)
+shape = SubResource("SegmentShape2D_bmxgx")
+debug_color = Color(3.513545e-06, 0.6328569, 0.45039046, 0.41960785)
+
+[node name="CollisionShape2D4" type="CollisionShape2D" parent="StaticBody2D"]
+position = Vector2(1022, -447)
+shape = SubResource("SegmentShape2D_bmxgx")
+debug_color = Color(3.513545e-06, 0.6328569, 0.45039046, 0.41960785)
